@@ -1,0 +1,37 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   pipe_utils2.c                                      :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: mhamdali <mhamdali@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/07/19 03:33:18 by mhamdali          #+#    #+#             */
+/*   Updated: 2025/07/29 08:26:50 by mhamdali         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "../minishell.h"
+
+void	external_command_pipe(char *path, t_command *command, t_gc_manager *gc)
+{
+	if (command->args_fo_exp && \
+		(!command->args || !command->args[0] || command->args[0][0] == '\0') &&
+		command->args_fo_exp[0] == true)
+	{
+		return ;
+	}
+	if (ft_strchr(command->args[0], '/'))
+		execute_path_command(command->args[0], command, gc);
+	if (!path)
+	{
+		handle_local_path(command, gc);
+	}
+	search_in_path(path, command, gc);
+	write(2, command->args[0], ft_strlen(command->args[0]));
+	write(2, ": command not found", 20);
+	write(2, "\n", 1);
+	clean_save_in(command);
+	cleanup_grb_cltr(gc->cmd_gc);
+	cleanup_grb_cltr(gc->env_gc);
+	exit(127);
+}
