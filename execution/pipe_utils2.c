@@ -6,11 +6,40 @@
 /*   By: mhamdali <mhamdali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/19 03:33:18 by mhamdali          #+#    #+#             */
-/*   Updated: 2025/07/29 08:26:50 by mhamdali         ###   ########.fr       */
+/*   Updated: 2025/07/31 20:51:58 by mhamdali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../minishell.h"
+
+int	count_cmd(t_command *cmd)
+{
+	int	i;
+
+	i = 0;
+	while (cmd)
+	{
+		i++;
+		cmd = cmd->next;
+	}
+	return (i);
+}
+
+void	execute_child_process(char *path, t_command *cmd, t_gc_manager *gc)
+{
+	int	check;
+
+	cmd->ori_env = convert_linked_to_char(cmd->env, gc->cmd_gc);
+	check = apply_redirections(cmd);
+	if (is_builtins(cmd) && check != -1)
+		execution_builtins(cmd, &cmd->env, 1, gc);
+	else if (check != -1)
+		external_command_pipe(path, cmd, gc);
+	clean_save_in(cmd);
+	cleanup_grb_cltr(gc ->cmd_gc);
+	cleanup_grb_cltr(gc ->env_gc);
+	exit(0);
+}
 
 void	external_command_pipe(char *path, t_command *command, t_gc_manager *gc)
 {

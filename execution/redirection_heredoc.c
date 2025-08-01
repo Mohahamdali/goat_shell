@@ -6,49 +6,37 @@
 /*   By: mhamdali <mhamdali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/19 03:33:12 by mhamdali          #+#    #+#             */
-/*   Updated: 2025/07/29 04:11:45 by mhamdali         ###   ########.fr       */
+/*   Updated: 2025/07/31 00:09:48 by mhamdali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../minishell.h"
 
-extern int	v_signal;
+extern int	g_signal[2];
 
-char	*get_tmp_filename(void)
+static int	write_expanded_line(char *line, t_env *env, int fd)
 {
-	char	*tmpfile;
+	t_garbage	*g_c;
+	char		*expanded_line;
 
-	tmpfile = "/tmp/minishell_heredoc.tmp";
-	if (access(tmpfile, F_OK) == 0)
-		tmpfile = "/tmp/minishell_handle.tmp";
-	return (tmpfile);
+	g_c = gc_init();
+	expanded_line = expander(NULL, line, env, g_c);
+	if (!expanded_line)
+		return (-1);
+	write(fd, expanded_line, ft_strlen(expanded_line));
+	write(fd, "\n", 1);
+	cleanup_grb_cltr(g_c);
+	return (0);
 }
 
-int	open_heredoc_file(char *tmpfile)
+int	process_heredoc_line(t_redirect *redirect, t_env *env, char *line, int fd)
 {
-	int	fd;
-
-	fd = open(tmpfile, O_CREAT | O_WRONLY | O_TRUNC, 0600);
-	if (fd == -1)
-		perror("open");
-	return (fd);
-}
-
-int	process_heredoc_line(char *line, t_redirect *redirect, t_env *env, int fd)
-{
-	t_garbage	*g_c = gc_init();
-	char	*expanded_line;
-
 	if (ft_strcmp(line, redirect->delimiter) == 0)
 		return (1);
 	if (redirect->heredoc_exp == true)
 	{
-		expanded_line = expander(NULL, line, env, g_c);
-		if (!expanded_line)
+		if (write_expanded_line(line, env, fd) == -1)
 			return (-1);
-		write(fd, expanded_line, ft_strlen(expanded_line));
-		write(fd, "\n", 1);
-		free(expanded_line);
 	}
 	else
 	{
@@ -66,13 +54,13 @@ int	read_heredoc_input(t_redirect *redirect, t_env *env, int fd)
 	while (1)
 	{
 		line = readline("> ");
-		if (!line || v_signal)
+		if (!line || g_signal[1])
 		{
 			if (line)
 				free(line);
-			break ;
+			return (-1);
 		}
-		result = process_heredoc_line(line, redirect, env, fd);
+		result = process_heredoc_line(redirect, env, line, fd);
 		free(line);
 		if (result == 1)
 			break ;
@@ -85,7 +73,7 @@ int	read_heredoc_input(t_redirect *redirect, t_env *env, int fd)
 int	cleanup_and_reopen(char *tmpfile, int fd)
 {
 	close(fd);
-	if (v_signal == 1)
+	if (g_signal[1] == 1)
 	{
 		unlink(tmpfile);
 		return (-1);
@@ -112,7 +100,7 @@ int	handle_heredoc(t_redirect *redirect, t_env *env)
 	if (fd == -1)
 		return (-1);
 	init_heredoc_signals();
-	v_signal = 0;
+	g_signal[1] = 0;
 	if (read_heredoc_input(redirect, env, fd) == -1)
 	{
 		close(fd);

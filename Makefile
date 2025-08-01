@@ -40,21 +40,25 @@ SRCS =	main.c \
 		execution/echo.c \
 		execution/pipe_utils.c \
 		execution/pipe_utils2.c \
-		execution/sub_command_path.c
+		execution/sub_command_path.c \
+		execution/redirection_utils.c
 
 OBJ = $(SRCS:.c=.o)
 NAME = minishell
-CFLAGS = 
+CFLAGS = -Wall -Wextra -Werror
 CC = cc
 RM = rm -f
 
 all: $(NAME)
 
-$(NAME): $(OBJ)
-	$(CC) $(CFLAGS) $^ -o $@ -lreadline
 
-$(OBJ): %.o : %.c minishell.h
-	$(CC) -c $(CFLAGS) $< -o $@
+
+$(NAME): $(OBJ)
+	$(CC) $(CFLAGS)  $(OBJ) -o $(NAME)  -lreadline
+
+
+%.o:%.c minishell.h
+	$(CC) $(CFLAGS)  -c $< -o $@
 
 clean:
 	$(RM) $(OBJ)

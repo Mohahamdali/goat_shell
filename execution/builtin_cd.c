@@ -6,7 +6,7 @@
 /*   By: mhamdali <mhamdali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/09 13:20:16 by mhamdali          #+#    #+#             */
-/*   Updated: 2025/07/29 02:50:28 by mhamdali         ###   ########.fr       */
+/*   Updated: 2025/07/31 20:52:26 by mhamdali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,7 +56,9 @@ static void	update_pwd_env(t_command *cmd, char *target, int manual_pwd,
 	t_env	*pwd_node;
 	char	*newpwd;
 	char	*pwd_env;
+	int		i;
 
+	i = 1;
 	if (manual_pwd)
 	{
 		pwd_env = g_strdup(gc, get_env_var(cmd->ori_env, "PWD"));
@@ -65,10 +67,13 @@ static void	update_pwd_env(t_command *cmd, char *target, int manual_pwd,
 	pwd_node = find_env_var(cmd->env, "PWD");
 	newpwd = getcwd(NULL, 0);
 	if (!newpwd)
+	{
+		i = 0;
 		newpwd = g_strdup(gc, target);
+	}
 	if (pwd_node)
 		update_env_content(pwd_node, newpwd, 0, gc);
-	if (newpwd && newpwd != target)
+	if (newpwd && i && newpwd != target)
 		free(newpwd);
 }
 
@@ -92,6 +97,5 @@ int	cd_builtin(t_command *cmd, t_garbage *gc)
 		return (1);
 	update_pwd_env(cmd, target, manual_pwd, gc);
 	free(oldpwd);
-	free(pwd_env);
 	return (0);
 }

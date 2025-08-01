@@ -1,6 +1,6 @@
 #include "minishell.h"
 
-extern int	v_signal[2];
+extern int	g_signal[2];
 
 int	main_loop(const char *prompt, t_env *shared_env, char **env, int flag)
 {
@@ -15,7 +15,7 @@ int	main_loop(const char *prompt, t_env *shared_env, char **env, int flag)
 		gc.cmd_gc = gc_init();
 		if (!gc.cmd_gc || !gc.env_gc)
 			return (1);
-		v_signal[0] = 0;
+		g_signal[0] = 0;
 		line = readline(prompt);
 		if (!line)
 			return (cleanup_grb_cltr(gc.cmd_gc), printf("exit\n"), 1);

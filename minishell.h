@@ -1,9 +1,9 @@
 #ifndef MINISHELL_H
 #define MINISHELL_H
 
+# include <stdio.h>
 # include <readline/readline.h>
 # include <readline/history.h>
-# include <stdio.h>
 # include <stdbool.h>
 # include <stdlib.h>
 # include <unistd.h>
@@ -219,6 +219,7 @@ char	*get_env_var(char **env, const char *var_name);
 int		apply_redirections (t_command *cmd);
 void	external_command_pipe (char *path, t_command *command, t_gc_manager *gc);
 void	execution_pipes (t_command *cmd, t_gc_manager *gc);
+void	execute_child_process(char *path, t_command *cmd, t_gc_manager *gc);
 
 // utils external command
 int     is_dire(char *path);
@@ -271,5 +272,10 @@ void	kill_all_children(pid_t *pids, int count);
 void	wait_for_children(pid_t *pids, int n_cmd);
 t_env	*find_env_var(t_env *env, const char *key);
 void	clean_save_in (t_command *cmd);
-int	cd_error_handler(char *oldpwd, char *pwd_env);
+int		cd_error_handler(char *oldpwd, char *pwd_env);
+int		save_output_redi(t_redirect *redirect);
+int		handle_input_redi(t_redirect *redirect);
+int		handle_output_redi(t_redirect *redirect);
+char	*get_tmp_filename(void);
+int		open_heredoc_file(char *tmpfile);
 #endif

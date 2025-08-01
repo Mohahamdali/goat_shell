@@ -6,7 +6,7 @@
 /*   By: mhamdali <mhamdali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/13 15:08:24 by mhamdali          #+#    #+#             */
-/*   Updated: 2025/07/29 03:21:44 by mhamdali         ###   ########.fr       */
+/*   Updated: 2025/07/30 22:50:18 by mhamdali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,34 +23,29 @@ t_env	*find_env_var(t_env *env, const char *key)
 	return (NULL);
 }
 
-void built_pwd(t_command *cmd)
+void	built_pwd(t_command *cmd)
 {
-    char *s;
-    int need_free = 0;
+	char	*s;
+	int		need_free;
 
-    (void)cmd;
-    s = getcwd(NULL, 0);
-    if (!s)
-    {
-        s = get_env_var(cmd->ori_env, "PWD");
-        if (!s)
-        {
-            last_exit_status(1, 1);
-            return;
-        }
-    }
-    else
-        need_free = 1;
-    if (printf("%s\n", s) < 0)
-    {
-        if (need_free)
-            free(s);
-        last_exit_status(1, 1);
-        return;
-    }
-    if (need_free)
-        free(s);
-    last_exit_status(0, 1);
+	(void)cmd;
+	need_free = 0;
+	s = getcwd(NULL, 0);
+	if (!s)
+	{
+		s = get_env_var(cmd->ori_env, "PWD");
+		if (!s)
+		{
+			last_exit_status(1, 1);
+			return ;
+		}
+	}
+	else
+		need_free = 1;
+	printf("%s\n", s);
+	if (need_free)
+		free(s);
+	last_exit_status(0, 1);
 }
 
 static int	handle_env_args(t_command *cmd)

@@ -6,122 +6,103 @@
 /*   By: mhamdali <mhamdali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/13 18:51:36 by mhamdali          #+#    #+#             */
-/*   Updated: 2025/07/29 07:11:17 by mhamdali         ###   ########.fr       */
+/*   Updated: 2025/07/31 20:51:51 by mhamdali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../minishell.h"
 
-int	count_cmd(t_command *cmd)
+void	setup_child_pipes(int prev_fd, int pipe_fd[2])
 {
-	int	i;
-
-	i = 0;
-	while (cmd)
+	if (prev_fd != -1)
 	{
-		i++;
-		cmd = cmd->next;
-	}
-	return (i);
-}
-
-void	setup_child_pipes(int **pipe_fd, int i, int n_cmd)
-{
-	int	j;
-
-	if (i > 0)
-	{
-		if (dup2(pipe_fd[i - 1][0], 0) == -1)
+		if (dup2(prev_fd, 0) == -1)
 			perror("dup2 stdin");
-		close(pipe_fd[i - 1][0]);
-		pipe_fd[i - 1][0] = -1;
+		close(prev_fd);
 	}
-	if (i < n_cmd - 1)
+	if (pipe_fd)
 	{
-		if (dup2(pipe_fd[i][1], 1) == -1)
+		close(pipe_fd[0]);
+		if (dup2(pipe_fd[1], 1) == -1)
 			perror("dup2 stdout");
-		close(pipe_fd[i][1]);
-		pipe_fd[i][1] = -1;
-	}
-	j = 0;
-	while (j < n_cmd - 1)
-	{
-		if (pipe_fd[j][0] != -1)
-			close(pipe_fd[j][0]);
-		if (pipe_fd[j][1] != -1)
-			close(pipe_fd[j][1]);
-		j++;
+		close(pipe_fd[1]);
 	}
 }
 
-void	execute_child_process(char *path, t_command *cmd, \
-    int **pipe_fd, t_gc_manager *gc)
+static void	handle_pipe_cleanup(int *prev_fd, t_command **cmd, int pipe_fd[2])
 {
-    int check;
-
-	cmd->ori_env = convert_linked_to_char(cmd->env, gc->cmd_gc);
-	check = apply_redirections(cmd);
-	if (is_builtins(cmd) && check != -1)
-		execution_builtins(cmd, &cmd->env, 1, gc);
-	else if (check != -1)
-		external_command_pipe(path, cmd, gc);
-	clean_save_in(cmd);
-	exit(0);
+	if (*prev_fd != -1)
+		close(*prev_fd);
+	if ((*cmd)->next)
+		*prev_fd = pipe_fd[0];
+	*cmd = (*cmd)->next;
+	if (*cmd && pipe_fd[1])
+		close(pipe_fd[1]);
 }
 
-int	fork_and_execute(t_command *cmd, int **pipe_fd, \
-    pid_t *pids, t_gc_manager *gc)
+void	in_child_process(t_command *cmd, int *pipe_fd, int prev_fd)
 {
-	int			i;
-	pid_t		child;
-	char		*path;
-	int			n_cmd;
+	int		*pipe_fd_to_pass;
+
+	if (cmd->next)
+		pipe_fd_to_pass = pipe_fd;
+	else
+		pipe_fd_to_pass = NULL;
+	setup_child_pipes(prev_fd, pipe_fd_to_pass);
+}
+
+int	fork_and_execute(t_command *cmd, pid_t *pids, t_gc_manager *gc)
+{
+	int		i;
+	int		pipe_fd[2];
+	int		prev_fd;
+	pid_t	child;
+	char	*path;
 
 	i = 0;
-	n_cmd = count_cmd(cmd);
+	prev_fd = -1;
 	path = get_env_var(cmd->ori_env, "PATH");
 	while (cmd)
 	{
+		if (cmd->next && pipe(pipe_fd) == -1)
+			return (perror("pipe"), kill_all_children(pids, i), -1);
 		child = fork();
 		if (child == -1)
 			return (perror("fork"), kill_all_children(pids, i), -1);
 		if (child == 0)
 		{
-			setup_child_pipes(pipe_fd, i, n_cmd);
-			execute_child_process(path, cmd, pipe_fd, gc);
+			in_child_process(cmd, pipe_fd, prev_fd);
+			execute_child_process(path, cmd, gc);
 		}
-		else
-			pids[i] = child;
-		i++;
-		cmd = cmd->next;
+		pids[i++] = child;
+		handle_pipe_cleanup(&prev_fd, &cmd, pipe_fd);
 	}
 	return (0);
 }
 
 void	execution_pipes(t_command *cmd, t_gc_manager *gc)
 {
-	int		n_cmd;
-	int		**pipe_fd;
 	pid_t	*pids;
+	int		n_cmd;
 
 	n_cmd = count_cmd(cmd);
-	if (n_cmd - 1 < 0)
+	if (n_cmd <= 0)
 		return ;
-	pipe_fd = create_pipes(n_cmd);
 	pids = malloc(n_cmd * sizeof(pid_t));
-	if (!pipe_fd || !pids)
+	if (!pids)
+		return ;
+	if (handle_all_heredocs(cmd) == -1)
 	{
-		cleanup_resources(pipe_fd, pids, n_cmd);
+		dup2(cmd->save_out, 1);
+		dup2(cmd->save_in, 0);
 		return ;
 	}
-	handle_all_heredocs(cmd);
-	if (fork_and_execute(cmd, pipe_fd, pids, gc) == -1)
+	if (fork_and_execute(cmd, pids, gc) == -1)
 	{
-		cleanup_resources(pipe_fd, pids, n_cmd);
+		kill_all_children(pids, n_cmd);
+		free(pids);
 		return ;
 	}
-	close_parent_pipes(pipe_fd, n_cmd);
-	free_pipes(pipe_fd, n_cmd - 1);
 	wait_for_children(pids, n_cmd);
 	free(pids);
 }

@@ -6,7 +6,7 @@
 /*   By: mhamdali <mhamdali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/13 16:33:20 by mhamdali          #+#    #+#             */
-/*   Updated: 2025/07/29 07:36:06 by mhamdali         ###   ########.fr       */
+/*   Updated: 2025/07/30 22:24:54 by mhamdali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,16 +14,23 @@
 
 int	is_cmd_equal(char *cmd, char *builtin_name)
 {
-	return (ft_strlen(cmd) == ft_strlen(builtin_name)) &&
-		(ft_strncmp(cmd, builtin_name, ft_strlen(builtin_name)) == 0);
+	return ((ft_strlen(cmd) == ft_strlen(builtin_name))
+		&& (ft_strncmp(cmd, builtin_name, ft_strlen(builtin_name)) == 0));
 }
 
 int	is_builtins(t_command *cmd)
 {
 	int		i;
-	char	*builtins[] = {"echo", "cd", "pwd", "export", "unset", "env", 
-		"exit", NULL};
+	char	*builtins[8];
 
+	builtins[0] = "echo";
+	builtins[1] = "cd";
+	builtins[2] = "pwd";
+	builtins[3] = "export";
+	builtins[4] = "unset";
+	builtins[5] = "env";
+	builtins[6] = "exit";
+	builtins[7] = NULL;
 	if (!cmd->args || !cmd->args[0])
 		return (0);
 	i = 0;
@@ -36,7 +43,7 @@ int	is_builtins(t_command *cmd)
 	return (0);
 }
 
-void	execution_builtins(t_command *cmd, t_env **env, int flag, 
+void	execution_builtins(t_command *cmd, t_env **env, int flag,
 						t_gc_manager *gc)
 {
 	if (is_cmd_equal(cmd->args[0], "echo"))
@@ -90,6 +97,8 @@ int	execution(t_command *cmd, t_env **env, int flag, t_gc_manager *gc)
 	{
 		if (handle_single_command(cmd, env, gc) == -1)
 		{
+			dup2(cmd->save_out, 1);
+			dup2(cmd->save_in, 0);
 			clean_save_in(cmd);
 			return (-1);
 		}

@@ -6,24 +6,11 @@
 /*   By: mhamdali <mhamdali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/19 03:33:22 by mhamdali          #+#    #+#             */
-/*   Updated: 2025/07/29 08:26:09 by mhamdali         ###   ########.fr       */
+/*   Updated: 2025/07/31 01:28:00 by mhamdali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../minishell.h"
-
-void	close_parent_pipes(int **pipe_fd, int n_cmd)
-{
-	int	j;
-
-	j = 0;
-	while (j < n_cmd - 1)
-	{
-		close(pipe_fd[j][0]);
-		close(pipe_fd[j][1]);
-		j++;
-	}
-}
 
 void	wait_for_children(pid_t *pids, int n_cmd)
 {
@@ -71,33 +58,4 @@ void	kill_all_children(pid_t *pids, int count)
 		}
 		i++;
 	}
-}
-
-int	**create_pipes(int n_cmd)
-{
-	int	**pipe_fd;
-	int	i;
-
-	pipe_fd = malloc((n_cmd - 1) * sizeof(int *));
-	if (!pipe_fd)
-		return (NULL);
-	i = 0;
-	while (i < n_cmd - 1)
-	{
-		pipe_fd[i] = malloc(2 * sizeof(int));
-		if (!pipe_fd[i])
-		{
-			free_pipes(pipe_fd, i);
-			return (NULL);
-		}
-		if (pipe(pipe_fd[i]) == -1)
-		{
-			perror("pipe");
-			free(pipe_fd[i]);
-			free_pipes(pipe_fd, i);
-			return (NULL);
-		}
-		i++;
-	}
-	return (pipe_fd);
 }
