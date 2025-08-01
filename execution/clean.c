@@ -6,7 +6,7 @@
 /*   By: mhamdali <mhamdali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/01 12:23:52 by mhamdali          #+#    #+#             */
-/*   Updated: 2025/08/01 19:51:29 by mhamdali         ###   ########.fr       */
+/*   Updated: 2025/08/01 20:40:13 by mhamdali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,4 +34,3 @@ void	clean_save_in(t_command *cmd)
 		cmd->save_out = -1;
 	}
 }
-

@@ -56,7 +56,7 @@ int	main(int ac, char **av, char**env)
 		return (cleanup_grb_cltr(g_c), 1);
 	if (main_loop(prompt, shared_env, env, flag))
 	{
-		 rl_clear_history();
+		//  rl_clear_history();
 		cleanup_grb_cltr(g_c);
 		return (1);
 	}

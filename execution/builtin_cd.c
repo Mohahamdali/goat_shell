@@ -6,7 +6,7 @@
 /*   By: mhamdali <mhamdali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/09 13:20:16 by mhamdali          #+#    #+#             */
-/*   Updated: 2025/07/31 20:52:26 by mhamdali         ###   ########.fr       */
+/*   Updated: 2025/08/01 20:40:06 by mhamdali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,31 +50,31 @@ static void	update_oldpwd_env(t_command *cmd, char *oldpwd, t_garbage *gc)
 		update_env_content(oldpwd_node, oldpwd, 0, gc);
 }
 
-static void	update_pwd_env(t_command *cmd, char *target, int manual_pwd,
-		t_garbage *gc)
+static void	update_pwd_env(t_command *cmd, char *target, \
+	int manual_pwd, t_garbage *gc)
 {
 	t_env	*pwd_node;
 	char	*newpwd;
 	char	*pwd_env;
-	int		i;
 
-	i = 1;
+	pwd_node = find_env_var(cmd->env, "PWD");
 	if (manual_pwd)
 	{
 		pwd_env = g_strdup(gc, get_env_var(cmd->ori_env, "PWD"));
 		update_pwd_env_cd_dotdot(&pwd_env);
+		if (pwd_node)
+			update_env_content(pwd_node, pwd_env, 0, gc);
 	}
-	pwd_node = find_env_var(cmd->env, "PWD");
-	newpwd = getcwd(NULL, 0);
-	if (!newpwd)
+	else
 	{
-		i = 0;
-		newpwd = g_strdup(gc, target);
+		newpwd = getcwd(NULL, 0);
+		if (!newpwd)
+			newpwd = g_strdup(gc, target);
+		if (pwd_node)
+			update_env_content(pwd_node, newpwd, 0, gc);
+		if (newpwd && newpwd != target)
+			free(newpwd);
 	}
-	if (pwd_node)
-		update_env_content(pwd_node, newpwd, 0, gc);
-	if (newpwd && i && newpwd != target)
-		free(newpwd);
 }
 
 int	cd_builtin(t_command *cmd, t_garbage *gc)
@@ -96,6 +96,7 @@ int	cd_builtin(t_command *cmd, t_garbage *gc)
 	if (execute_cd(target, oldpwd, pwd_env) != 0)
 		return (1);
 	update_pwd_env(cmd, target, manual_pwd, gc);
-	free(oldpwd);
+	if (manual_pwd != 1)
+		free(oldpwd);
 	return (0);
 }
